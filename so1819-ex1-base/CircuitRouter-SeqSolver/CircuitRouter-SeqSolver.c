@@ -145,7 +145,7 @@ static void parseArgs (long argc, char* const argv[]){
         displayUsage(argv[0]);
     }
 }
-// CircuitRouter-SeqSolver/inputs/random-x32-y32-z3-n64.txt
+// inputs/random-x32-y32-z3-n64.txt
 
 /* =============================================================================
  * main
@@ -155,8 +155,8 @@ int main(int argc, char** argv){
     /*
      * Initialization
      */
-    FILE *resultFile;
-    char* resFileName;
+    //FILE *resultFile;
+    //char* resFileName;
 
     parseArgs(argc, (char** const)argv);
     

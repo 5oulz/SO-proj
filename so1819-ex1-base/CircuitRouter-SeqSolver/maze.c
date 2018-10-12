@@ -167,8 +167,7 @@ long maze_read(maze_t* mazePtr, char* filepath) {
     vector_t* srcVectorPtr = mazePtr->srcVectorPtr;
     vector_t* dstVectorPtr = mazePtr->dstVectorPtr;
 
-    FILE *file = fopen(filepath, "r"),
-         *fileres;
+    FILE *file = fopen(filepath, "r");
     global_filePath = filepath;
     
     // reads from pointer to file

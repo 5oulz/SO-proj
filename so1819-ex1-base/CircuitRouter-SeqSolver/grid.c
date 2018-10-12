@@ -236,12 +236,17 @@ void grid_print (grid_t* gridPtr, char* filePath){
     long depth  = gridPtr->depth;
     long z;
     char* resFileName = strcat(filePath, ".res");
-    char* oldResFileName = strcat(resFileName, ".old");
+    char* oldResFileName = malloc(sizeof(char) * 4 + sizeof(resFileName));
     FILE *f;
-    
+
+    strcpy(oldResFileName, resFileName);
+    strcat(oldResFileName, ".old");
+
     if( access(resFileName, F_OK ) != -1 ) {
+        puts("no file");
         // file exists
         if( access(oldResFileName, F_OK) != -1 ) {
+            puts("old file");
             // there's a file with .old
             if( remove(oldResFileName) == 0 ) {
                 // removing old file

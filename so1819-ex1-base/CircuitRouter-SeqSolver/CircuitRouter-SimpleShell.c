@@ -3,10 +3,10 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
-#include "lib/commandlinereader.h"
+#include "../lib/commandlinereader.h"
 
 #define SHELL_RL_BUFFSIZE 1024
-#define MAZE_SOLVER "./CircuitRouter-SeqSolver/CircuitRouter-SeqSolver"
+#define MAZE_SOLVER "CircuitRouter-SeqSolver"
 
 long int global_max_children = 32;
 long int global_processes_runnning = 0;
@@ -22,36 +22,13 @@ void free_tokens(char **tokens) {
  * executes input files
  */
 int shell_execute(char *token) {
-    int status;
     char* args[] = { MAZE_SOLVER, token, NULL };
-    pid_t pid, wpid;
 
     if( execv(MAZE_SOLVER, args) == -1 ) {
         return -1;
     } else {
         return 0;
     }
-
-    /*pid = fork();
-    if(pid < 0) {
-        //error handling
-        puts("Failed to fork process");
-        exit(1);
-    }
-    if( pid == 0 ) {
-        puts("running child");
-        sleep(2);
-        execv(MAZE_SOLVER, args);
-        exit(1);
-    } else {
-        // Parent process
-        puts("waiting");
-        pid = wait(&status);
-        puts("child done, resuming");
-        do {
-            wpid = waitpid(pid, &status, WUNTRACED);
-        } while (!WIFEXITED(status) && !WIFSIGNALED(status));
-    }*/
 }
 
 /**
@@ -62,6 +39,7 @@ int shell_read(char **tokens) {
 
     if( (int)strcmp(tokens[0], "exit") == 0 ) {
         // exits
+        puts("END.");
         return -1;
     }
     if( (int)strcmp(tokens[0], "MAXCHILDREN") == 0 ) {
@@ -97,9 +75,10 @@ void shell_loop(void) {;
         buffSize = SHELL_RL_BUFFSIZE;
     char **tokens = malloc(buffSize * sizeof(char*)),
          *stringBuffer = malloc(sizeof(char) * buffSize);
-    pid_t pid, pids, wpid;
-    
-    //do {
+    pid_t pid, wpid;
+    //pid_t *pid, *wpid;
+    //pid = malloc(sizeof(pid_t) * global_max_children);
+
     while(readStatus > -1) {
         readLineArguments(tokens, buffSize, stringBuffer, buffSize);
         readStatus = shell_read(tokens);
@@ -108,31 +87,30 @@ void shell_loop(void) {;
             // there's an input file to run
             if( global_processes_runnning < global_max_children ) {
                 // there're less processes running than total allowed
-            }
-        }
+                /*for( int i = 0; (i < global_max_children); i++ ) {
+                    pid_t temp = pid[i];
+                    if( temp == NULL ) {}
 
-        if ( (pid = fork()) == 0) {
-            printf("process: %d starting\n", pid);
-            // Child process
-            global_processes_runnning++;
-            printf("processes running %d\n", global_processes_runnning);
-            sleep(5);
-            puts("ends child 1 sleep");
-            if( readStatus == 1 ) {
-                shell_execute(tokens[1]);
+                }*/
+
+                pid = fork();
+                if( pid < 0 ) {
+                    printf("Unable to fork");
+                } else if ( pid == 0 ) {
+                    // Child process
+                    global_processes_runnning++;
+                    if( readStatus == 1 ) {
+                        shell_execute(tokens[1]);
+                    }
+                    exit(EXIT_FAILURE);
+                } else {
+                    // Parent process
+                    do {
+                        wpid = waitpid(pid, &status, WUNTRACED);
+                    } while (!WIFEXITED(status) && !WIFSIGNALED(status));
+                    printf("CHILD EXITED (PID=%D; return )\n", pid);
+                }
             }
-            exit(EXIT_FAILURE);
-        } else if( (pids = fork()) == 0 ) {
-            // second
-            printf("processes running %d\n", global_processes_runnning);
-            sleep(2);
-            puts("child 2 end");
-        } else {
-            // Parent process
-            do {
-                wpid = waitpid(pid, &status, WUNTRACED);
-            } while (!WIFEXITED(status) && !WIFSIGNALED(status));
-            printf("process: %d ending\n", pid);
         }
     }
 
