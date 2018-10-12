@@ -190,11 +190,11 @@ int main(int argc, char** argv){
         numPathRouted += vector_getSize(pathVectorPtr);
 	}
     
-    resFileName = strcat(global_inputFile, ".res"); // setting file name
-    resultFile = fopen(resFileName, "w");
-    fprintf(resultFile, "Paths routed    = %li\n", numPathRouted);
-    fprintf(resultFile, "Elapsed time    = %f seconds\n", TIMER_DIFF_SECONDS(startTime, stopTime));
-    fclose(resultFile);
+    /*resFileName = strcat(global_inputFile, ".res"); // setting file name
+    resultFile = fopen(resFileName, "w");*/
+    printf("Paths routed    = %li\n", numPathRouted);
+    printf("Elapsed time    = %f seconds\n", TIMER_DIFF_SECONDS(startTime, stopTime));
+    //fclose(resultFile);
 
 
     /*
