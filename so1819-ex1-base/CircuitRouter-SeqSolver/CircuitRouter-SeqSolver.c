@@ -55,11 +55,15 @@
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 #include "lib/list.h"
 #include "maze.h"
 #include "router.h"
 #include "lib/timer.h"
 #include "lib/types.h"
+
+#define CircuitRouter "CircuitRouter-SeqSolver.c"
 
 enum param_types {
     PARAM_BENDCOST = (unsigned char)'b',
@@ -113,7 +117,6 @@ static void setDefaultParams (){
  * =============================================================================
  */
 static void parseArgs (long argc, char* const argv[]){
-    long i;
     long opt;
 
     opterr = 0;
@@ -136,17 +139,13 @@ static void parseArgs (long argc, char* const argv[]){
         }
     }
 
-    // argv do optind sera nome fich
-    for (i = optind; i < argc; i++) {
-        fprintf(stderr, "Non-option argument: %s\n", argv[i]);
-        opterr++;
-    }
+    global_inputFile = argv[optind];
 
     if (opterr) {
         displayUsage(argv[0]);
     }
 }
-
+// CircuitRouter-SeqSolver/inputs/random-x32-y32-z3-n64.txt
 
 /* =============================================================================
  * main
@@ -156,11 +155,16 @@ int main(int argc, char** argv){
     /*
      * Initialization
      */
+    FILE *resultFile;
+    char* resFileName;
+
     parseArgs(argc, (char** const)argv);
+    
     maze_t* mazePtr = maze_alloc();
     assert(mazePtr);
 
-    long numPathToRoute = maze_read(mazePtr);
+    long numPathToRoute = maze_read(mazePtr, global_inputFile);
+
     router_t* routerPtr = router_alloc(global_params[PARAM_XCOST],
                                        global_params[PARAM_YCOST],
                                        global_params[PARAM_ZCOST],
@@ -185,9 +189,12 @@ int main(int argc, char** argv){
         vector_t* pathVectorPtr = (vector_t*)list_iter_next(&it, pathVectorListPtr);
         numPathRouted += vector_getSize(pathVectorPtr);
 	}
-    // also go to file
-    printf("Paths routed    = %li\n", numPathRouted);
-    printf("Elapsed time    = %f seconds\n", TIMER_DIFF_SECONDS(startTime, stopTime));
+    
+    resFileName = strcat(global_inputFile, ".res"); // setting file name
+    resultFile = fopen(resFileName, "w");
+    fprintf(resultFile, "Paths routed    = %li\n", numPathRouted);
+    fprintf(resultFile, "Elapsed time    = %f seconds\n", TIMER_DIFF_SECONDS(startTime, stopTime));
+    fclose(resultFile);
 
 
     /*

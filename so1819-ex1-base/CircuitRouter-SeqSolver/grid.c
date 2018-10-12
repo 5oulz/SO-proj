@@ -55,6 +55,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include "coordinate.h"
 #include "grid.h"
 #include "lib/types.h"
@@ -229,12 +230,29 @@ void grid_addPath_Ptr (grid_t* gridPtr, vector_t* pointVectorPtr){
  * grid_print
  * =============================================================================
  */
-void grid_print (grid_t* gridPtr){
+void grid_print (grid_t* gridPtr, char* filePath){
     long width  = gridPtr->width;
     long height = gridPtr->height;
     long depth  = gridPtr->depth;
     long z;
-    FILE *f = fopen("result.txt", "w");
+    char* resFileName = strcat(filePath, ".res");
+    char* oldResFileName = strcat(resFileName, ".old");
+    FILE *f;
+    
+    if( access(resFileName, F_OK ) != -1 ) {
+        // file exists
+        if( access(oldResFileName, F_OK) != -1 ) {
+            // there's a file with .old
+            if( remove(oldResFileName) == 0 ) {
+                // removing old file
+                rename(resFileName, strcat(resFileName, ".old"));
+            }
+        } else {
+            rename(resFileName, strcat(resFileName, ".old"));
+        }
+    }
+
+    f = fopen(resFileName, "w");
 
     for (z = 0; z < depth; z++) {
         fprintf(f, "[z = %li]\n", z);
@@ -248,6 +266,8 @@ void grid_print (grid_t* gridPtr){
         }
         fprintf(f, "\n");
     }
+
+    fclose(f);
 }
 
 

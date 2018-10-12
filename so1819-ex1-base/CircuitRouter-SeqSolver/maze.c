@@ -63,6 +63,7 @@
 #include "lib/types.h"
 #include "lib/vector.h"
 
+char* global_filePath = NULL;
 
 /* =============================================================================
  * maze_alloc
@@ -150,8 +151,8 @@ static void addToGrid (grid_t* gridPtr, vector_t* vectorPtr, char* type){
  * =============================================================================
  */
 
-long maze_read (maze_t* mazePtr){
-    // pass file as argument
+//long maze_read (maze_t* mazePtr){
+long maze_read(maze_t* mazePtr, char* filepath) {
     
     /*
      * Parse input from stdin
@@ -165,9 +166,13 @@ long maze_read (maze_t* mazePtr){
     vector_t* wallVectorPtr = mazePtr->wallVectorPtr;
     vector_t* srcVectorPtr = mazePtr->srcVectorPtr;
     vector_t* dstVectorPtr = mazePtr->dstVectorPtr;
+
+    FILE *file = fopen(filepath, "r"),
+         *fileres;
+    global_filePath = filepath;
     
     // reads from pointer to file
-    while (fgets(line, sizeof(line), stdin)) {
+    while (fgets(line, sizeof(line), file)) {
         
         char code;
         long x1, y1, z1;
@@ -235,7 +240,7 @@ long maze_read (maze_t* mazePtr){
         
     } /* iterate over lines in input file */
     
-    
+    fclose(file);
     /*
      * Initialize grid contents
      */
@@ -250,6 +255,7 @@ long maze_read (maze_t* mazePtr){
     addToGrid(gridPtr, wallVectorPtr, "wall");
     addToGrid(gridPtr, srcVectorPtr,  "source");
     addToGrid(gridPtr, dstVectorPtr,  "destination");
+
     printf("Maze dimensions = %li x %li x %li\n", width, height, depth);
     printf("Paths to route  = %li\n", list_getSize(workListPtr));
     
@@ -264,6 +270,7 @@ long maze_read (maze_t* mazePtr){
         queue_push(workQueuePtr, (void*)coordinatePairPtr);
     }
     list_free(workListPtr);
+    fclose(file);
     
     return vector_getSize(srcVectorPtr);
 }
@@ -363,7 +370,7 @@ bool_t maze_checkPaths (maze_t* mazePtr, list_t* pathVectorListPtr, bool_t doPri
 
     if (doPrintPaths) {
         puts("\nRouted Maze:");
-        grid_print(testGridPtr);
+        grid_print(testGridPtr, global_filePath);
     }
 
     grid_free(testGridPtr);
