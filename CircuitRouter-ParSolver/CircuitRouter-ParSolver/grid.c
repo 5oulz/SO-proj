@@ -55,7 +55,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
+#include <getopt.h>
+#include <fcntl.h>
 #include "coordinate.h"
 #include "grid.h"
 #include "lib/types.h"
@@ -230,49 +231,23 @@ void grid_addPath_Ptr (grid_t* gridPtr, vector_t* pointVectorPtr){
  * grid_print
  * =============================================================================
  */
-void grid_print (grid_t* gridPtr, char* filePath){
+void grid_print (grid_t* gridPtr, FILE *fp){
     long width  = gridPtr->width;
     long height = gridPtr->height;
     long depth  = gridPtr->depth;
     long z;
-    char* resFileName = strcat(filePath, ".res");
-    char* oldResFileName = malloc(sizeof(char) * 4 + sizeof(resFileName));
-    FILE *f;
-
-    strcpy(oldResFileName, resFileName);
-    strcat(oldResFileName, ".old");
-
-    if( access(resFileName, F_OK ) != -1 ) {
-        puts("no file");
-        // file exists
-        if( access(oldResFileName, F_OK) != -1 ) {
-            puts("old file");
-            // there's a file with .old
-            if( remove(oldResFileName) == 0 ) {
-                // removing old file
-                rename(resFileName, strcat(resFileName, ".old"));
-            }
-        } else {
-            rename(resFileName, strcat(resFileName, ".old"));
-        }
-    }
-
-    f = fopen(resFileName, "w");
-
     for (z = 0; z < depth; z++) {
-        fprintf(f, "[z = %li]\n", z);
+        fprintf(fp, "[z = %li]\n", z);
         long x;
         for (x = 0; x < width; x++) {
             long y;
             for (y = 0; y < height; y++) {
-                fprintf(f, "%4li", *grid_getPointRef(gridPtr, x, y, z));
+                fprintf(fp,"%4li", *grid_getPointRef(gridPtr, x, y, z));
             }
-            fprintf(f, "\n");
+            fputs("\n",fp);
         }
-        fprintf(f, "\n");
+        fputs("\n",fp);
     }
-
-    fclose(f);
 }
 
 

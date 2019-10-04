@@ -45,68 +45,131 @@
  *
  * =============================================================================
  *
- * maze.h
+ * grid.h
  *
  * =============================================================================
  */
 
 
-#ifndef MAZE_H
-#define MAZE_H 1
+#ifndef GRID_H
+#define GRID_H 1
 
-
-#include "coordinate.h"
-#include "grid.h"
-#include "lib/list.h"
-#include "lib/pair.h"
-#include "lib/queue.h"
+#include <stdio.h>
 #include "lib/types.h"
 #include "lib/vector.h"
 
-typedef struct maze {
-    grid_t* gridPtr;
-    queue_t* workQueuePtr;   /* contains source/destination pairs to route */
-    vector_t* wallVectorPtr; /* obstacles */
-    vector_t* srcVectorPtr;  /* sources */
-    vector_t* dstVectorPtr;  /* destinations */
-} maze_t;
+
+typedef struct grid {
+    long width;
+    long height;
+    long depth;
+    long* points;
+    long* points_unaligned;
+} grid_t;
+
+enum {
+    GRID_POINT_FULL  = -2L,
+    GRID_POINT_EMPTY = -1L
+};
 
 
 /* =============================================================================
- * maze_alloc
+ * grid_alloc
  * =============================================================================
  */
-maze_t* maze_alloc ();
+grid_t* grid_alloc (long width, long height, long depth);
 
 
 /* =============================================================================
- * maze_free
+ * grid_free
  * =============================================================================
  */
-void maze_free (maze_t* mazePtr);
+void grid_free (grid_t* gridPtr);
 
 
 /* =============================================================================
- * maze_read
- * -- Return number of path to route
+ * grid_copy
  * =============================================================================
  */
-long maze_read (maze_t* mazePtr, char* filepath);
+void grid_copy (grid_t* dstGridPtr, grid_t* srcGridPtr);
 
 
 /* =============================================================================
- * maze_checkPaths
+ * grid_isPointValid
  * =============================================================================
  */
-bool_t maze_checkPaths (maze_t* mazePtr, list_t* pathListPtr, bool_t doPrintPaths);
+bool_t grid_isPointValid (grid_t* gridPtr, long x, long y, long z);
 
 
-#endif /* MAZE_H */
+/* =============================================================================
+ * grid_getPointRef
+ * =============================================================================
+ */
+long* grid_getPointRef (grid_t* gridPtr, long x, long y, long z);
+
+
+/* =============================================================================
+ * grid_getPointIndices
+ * =============================================================================
+ */
+void grid_getPointIndices (grid_t* gridPtr, long* gridPointPtr, long* xPtr, long* yPtr, long* zPtr);
+
+
+/* =============================================================================
+ * grid_getPoint
+ * =============================================================================
+ */
+long grid_getPoint (grid_t* gridPtr, long x, long y, long z);
+
+
+/* =============================================================================
+ * grid_isPointEmpty
+ * =============================================================================
+ */
+bool_t grid_isPointEmpty (grid_t* gridPtr, long x, long y, long z);
+
+
+/* =============================================================================
+ * grid_isPointFull
+ * =============================================================================
+ */
+bool_t grid_isPointFull (grid_t* gridPtr, long x, long y, long z);
+
+
+/* =============================================================================
+ * grid_setPoint
+ * =============================================================================
+ */
+void grid_setPoint (grid_t* gridPtr, long x, long y, long z, long value);
+
+
+/* =============================================================================
+ * grid_addPath
+ * =============================================================================
+ */
+void grid_addPath (grid_t* gridPtr, vector_t* pointVectorPtr);
+
+
+/* =============================================================================
+ * grid_addPath_Ptr
+ * =============================================================================
+ */
+void grid_addPath_Ptr (grid_t* gridPtr, vector_t* pointVectorPtr);
+
+
+/* =============================================================================
+ * grid_print
+ * =============================================================================
+ */
+void grid_print (grid_t* gridPtr, FILE *fp);
+
+
+#endif /* GRID_H */
 
 
 /* =============================================================================
  *
- * End of maze.h
+ * End of grid.c
  *
  * =============================================================================
  */

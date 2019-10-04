@@ -53,10 +53,12 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <pthread.h>
 #include "coordinate.h"
 #include "grid.h"
 #include "lib/queue.h"
 #include "router.h"
+#include "parhelper.h"
 #include "lib/vector.h"
 
 
@@ -135,7 +137,14 @@ static void expandToNeighbor (grid_t* myGridPtr, long x, long y, long z, long va
     }
 }
 
-
+int expthr = 0;
+pthread_mutex_t lollock;
+void initlollock() {
+    pthread_mutex_init(&lollock, NULL);
+}
+void deslollock() {
+    pthread_mutex_destroy(&lollock);
+}
 /* =============================================================================
  * doExpansion
  * =============================================================================
@@ -184,7 +193,7 @@ static bool_t doExpansion (router_t* routerPtr, grid_t* myGridPtr, queue_t* queu
         expandToNeighbor(myGridPtr, x,   y,   z+1, (value + zCost), queuePtr);
         expandToNeighbor(myGridPtr, x,   y,   z-1, (value + zCost), queuePtr);
 
-    } /* iterate over work queue */
+    }
 
     return isPathFound;
 }
@@ -287,18 +296,37 @@ static vector_t* doTraceback (grid_t* gridPtr, grid_t* myGridPtr, coordinate_t* 
     return pointVectorPtr;
 }
 
+/*
+* mutex inits
+*/
+pthread_mutex_t expansionLock, gridChangeLock, tracebackLock;
+void solve_mutex_inits() {
+    pthread_mutex_init(&expansionLock, NULL);
+    pthread_mutex_init(&gridChangeLock, NULL);
+    pthread_mutex_init(&tracebackLock, NULL);
+}
+
+/*
+* mutex destroys
+*/
+void solve_mutex_destroys() {
+    pthread_mutex_destroy(&expansionLock);
+    pthread_mutex_destroy(&gridChangeLock);
+    pthread_mutex_destroy(&tracebackLock);
+}
+
 
 /* =============================================================================
  * router_solve
  * =============================================================================
  */
-void router_solve (void* argPtr){
-
+void *router_solve (void* argPtr){
     router_solve_arg_t* routerArgPtr = (router_solve_arg_t*)argPtr;
     router_t* routerPtr = routerArgPtr->routerPtr;
     maze_t* mazePtr = routerArgPtr->mazePtr;
     vector_t* myPathVectorPtr = vector_alloc(1);
     assert(myPathVectorPtr);
+    bool_t expansionResult;
 
     queue_t* workQueuePtr = mazePtr->workQueuePtr;
     grid_t* gridPtr = mazePtr->gridPtr;
@@ -312,6 +340,8 @@ void router_solve (void* argPtr){
      * 'expansion' and 'traceback' phase for each source/destination pair.
      */
     while (1) {
+        /* locking queue */
+        pthread_mutex_lock(&queueLock);
 
         pair_t* coordinatePairPtr;
         if (queue_isEmpty(workQueuePtr)) {
@@ -322,6 +352,9 @@ void router_solve (void* argPtr){
         if (coordinatePairPtr == NULL) {
             break;
         }
+        /* unlocking queue */
+        pthread_mutex_unlock(&queueLock);
+
 
         coordinate_t* srcPtr = coordinatePairPtr->firstPtr;
         coordinate_t* dstPtr = coordinatePairPtr->secondPtr;
@@ -331,9 +364,21 @@ void router_solve (void* argPtr){
         bool_t success = FALSE;
         vector_t* pointVectorPtr = NULL;
 
+        /* gridChange lock */
+        pthread_mutex_lock(&gridChangeLock);
+
         grid_copy(myGridPtr, gridPtr); /* create a copy of the grid, over which the expansion and trace back phases will be executed. */
-        if (doExpansion(routerPtr, myGridPtr, myExpansionQueuePtr,
-                         srcPtr, dstPtr)) {
+
+        /** gridChange unlock **/
+        pthread_mutex_unlock(&gridChangeLock);
+
+        /* expansion lock */
+        pthread_mutex_lock(&expansionLock);
+
+        expansionResult = doExpansion(routerPtr, myGridPtr, myExpansionQueuePtr, srcPtr, dstPtr);
+
+        /* iterate over work queue */
+        if ( expansionResult ) {
             pointVectorPtr = doTraceback(gridPtr, myGridPtr, dstPtr, bendCost);
             if (pointVectorPtr) {
                 grid_addPath_Ptr(gridPtr, pointVectorPtr);
@@ -342,12 +387,24 @@ void router_solve (void* argPtr){
             }
         }
 
+        /** copy unlock **/
+        pthread_mutex_unlock(&expansionLock);
+
         if (success) {
+            /* gridChange lock */
+            pthread_mutex_lock(&gridChangeLock);
+            
             bool_t status = vector_pushBack(myPathVectorPtr,(void*)pointVectorPtr);
             assert(status);
+
+            /** gridChange unlock **/
+            pthread_mutex_unlock(&gridChangeLock);
         }
 
     }
+    
+    //pthread_mutex_destroy(&queueLock);
+    deslollock();
 
     /*
      * Add my paths to global list
@@ -357,6 +414,7 @@ void router_solve (void* argPtr){
 
     grid_free(myGridPtr);
     queue_free(myExpansionQueuePtr);
+    pthread_exit(NULL);
 }
 
 
